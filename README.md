@@ -1,198 +1,172 @@
-# Tools-Hub
+# ToolHubs
 
-This project is a centralized engineering tools hub with an integrated chatbot powered by RAG (Retrieval-Augmented Generation)
+A website that lists engineering tools with step-by-step guides, plus an AI chatbot that answers questions from your Notion pages and GitHub READMEs.
 
-# **Engineering Tools Wiki**
+The project has 3 parts. Each one runs in its own terminal:
 
-A full-stack web application that provides an **engineering tools dashboard** with detailed guides, search, and chatbot assistance.
-Built using **React.js** (frontend) and **Node.js + Express + MongoDB** (backend).
-
----
-
-## **Frontend Features**
-
-- **Home Page:** Displays a list of engineering tools in a card layout.
-- **Tool Details:** View detailed information about each tool, including category, description, official link, and signup/login/usage guides.
-- **Responsive Design:** Works seamlessly on desktop and mobile.
-- **Contact Page:** Shows company contact information with clickable email, phone, and address links.
-- **Navbar:** Stays fixed at the top while scrolling.
-- **Chatbot Widget:** Interactive demo chatbot that scrolls automatically to latest messages and supports sending messages via the Enter key.
+| Folder | What it is | Runs on |
+|---|---|---|
+| `Frontend` | The website | http://localhost:5173 |
+| `Backend` | Tools data (MongoDB) | http://localhost:5000 |
+| `rag_base_3` | AI chatbot | http://localhost:5678 |
 
 ---
 
-## **Backend Features**
+## 1. Install Node.js 22
 
-- **Node.js + Express API:** Serves tool data from MongoDB.
-- **MongoDB Database:** Stores tools with details and guides.
-- **Seed & Sync Scripts:**
+This project needs **Node 22**. Older versions (like Node 18) will not work.
 
-  - `seedTools.js` — Adds default tools to the database.
-  - `syncTools.js` — Updates existing tools with latest default data.
+Check your version:
 
-- **Upsert Support:** Any changes in `defaultTools.js` can be synced with the database.
-
----
-
-## **Frontend File Structure**
-
+```bash
+node -v
 ```
-TASK
-├── Frontend
-│   ├── node_modules
-│   ├── public
-│   ├── src
-│   │   ├── Component
-│   │   │   ├── ChatbotWidget
-│   │   │   ├── Navbar
-│   │   │   └── Toolcard
-│   │   ├── Data
-│   │   ├── Pages
-│   │   │   ├── ContactPage
-│   │   │   ├── HomePage
-│   │   │   ├── ToolDetailsPage
-│   │   │   └── ToolsDetails
-│   │   ├── App.css
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── .env
-│   ├── .gitignore
-│   ├── eslint.config.js
-│   ├── index.html
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── README.md
-│   └── vite.config.js
-└── README.md
+
+If it doesn't start with `v22`, install it with [nvm](https://github.com/nvm-sh/nvm):
+
+```bash
+nvm install 22
+nvm use 22
+```
+
+> Run `nvm use 22` again every time you open a new terminal.
+
+---
+
+## 2. Get the code
+
+```bash
+git clone https://github.com/Shreyash097/ToolHubs.git
+cd ToolHubs
 ```
 
 ---
 
-## **Backend File Structure**
+## 3. Create the `.env` files
 
-```
-TASK
-├── Backend
-│   ├── chatbot
-│   ├── controllers
-│   ├── models
-│   ├── node_modules
-│   ├── Public
-│   ├── routes
-│   ├── seed
-│   │   ├── defaultTools.js
-│   │   ├── seed.js
-│   │   └── syncTools.js
-│   ├── .env
-│   ├── .gitignore
-│   ├── package-lock.json
-│   ├── package.json
-│   └── Server.js
-└── Frontend
-```
+Create one `.env` file in each folder and paste the text below. Replace the `your_...` values with your own keys.
 
----
-
-## **Installation & Setup**
-
-### **Backend**
-
-1. Clone the repository:
-
-```bash
-git clone <repo-url>
-cd backend
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Create a `.env` file with your MongoDB URI:
-
-```env
-MONGO_URI=your_mongo_connection_string
-PORT=5000
-```
-
-### **Sync Default Tools**
-
-If you update `defaultTools.js`, run the sync script to reflect changes in the database:
-
-```bash
-# Navigate to backend
-cd backend
-
-# Run sync
-node seed/syncTools.js
-
-# Start the server
-npm run dev
-# or
-node Server.js
-
-# After running these commands, all default tools from defaultTools.js will be available in the connected MongoDB.
-```
-
-### **Frontend**
-
-1. Navigate to the frontend folder:
-
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Create a `.env` file:
+**`Frontend/.env`**
 
 ```env
 VITE_API_URL=http://localhost:5000
+VITE_CHAT_API_URL=http://localhost:5678/api/chat
 ```
 
-4. Start the frontend server:
+**`Backend/.env`**
+
+```env
+MONGO_URI=your_mongodb_connection_string
+PORT=5000
+```
+
+**`rag_base_3/.env`**
+
+```env
+GOOGLE_API_KEY=your_gemini_key
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-embedding-001
+PINECONE_API_KEY=your_pinecone_key
+PINECONE_INDEX=your_pinecone_index_name
+PINECONE_NAMESPACE=__default__
+SERVER_PORT=5678
+NOTION_TOKEN=your_notion_token
+GITHUB_ACCESS_TOKEN=your_github_token
+STATE_FILE=./state_after_embedding.json
+```
+
+Where to get the keys:
+
+- **MongoDB:** free database at [cloud.mongodb.com](https://cloud.mongodb.com) → Connect → copy the connection string
+- **Gemini:** [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) (use the same key twice)
+- **Pinecone:** [app.pinecone.io](https://app.pinecone.io) → create an index with **dimension 768** and metric **cosine**
+- **Notion:** [notion.so/my-integrations](https://www.notion.so/my-integrations) → create an integration, then share your pages with it
+- **GitHub:** Settings → Developer settings → Personal access tokens
+
+> `.env` files hold your secret keys. They are ignored by git, so they never get uploaded.
+
+---
+
+## 4. Start the project
+
+Open **3 terminals**, one for each part.
+
+**Terminal 1: Backend**
 
 ```bash
+nvm use 22
+cd Backend
+npm install
+node seed/syncTools.js
 npm run dev
 ```
 
----
-
-## **Adding in new DB or Updating Tools**
-
-1. Add or update tool information in `backend/seed/defaultTools.js`:
-
-```js
-{
-  id: "newtool",
-  name: "New Tool",
-  category: "Category",
-  description: "Tool description",
-  companydocument: " ",
-  officialLink: "https://example.com",
-  guide: {
-    about: "",
-    signup: "",
-    login: "",
-    usage: ""
-  }
-}
-```
-
-2. Run the sync script:
+**Terminal 2: Chatbot**
 
 ```bash
-node seed/syncTools.js
+nvm use 22
+cd rag_base_3
+npm install
+node api_server.js
 ```
 
-3. Changes will reflect automatically in the frontend.
+**Terminal 3: Website**
+
+```bash
+nvm use 22
+cd Frontend
+npm install
+npm run dev
+```
+
+Now open **http://localhost:5173** in your browser. 🎉
+
+> `npm install` and `node seed/syncTools.js` are only needed the **first time**. After that, just run the last command in each terminal.
 
 ---
 
--
+## 5. Give the chatbot some knowledge (one time)
+
+The chatbot can only answer from data you load into Pinecone. In the `rag_base_3` folder, run:
+
+```bash
+# Load your Notion pages
+node notion_seeding/orchestration.js
+
+# Load README files from your GitHub repos
+# (list the repos first in github_seeding/config.js)
+node github_seeding/ingestGithub.js
+```
+
+Run these again whenever you want the chatbot to learn new content.
+
+---
+
+## Add or change a tool
+
+1. Edit `Backend/seed/defaultTools.js`
+2. Run:
+
+   ```bash
+   cd Backend
+   node seed/syncTools.js
+   ```
+
+3. Refresh the website.
+
+---
+
+## Common problems
+
+| Problem | Fix |
+|---|---|
+| `npm install` fails with `ERESOLVE` in `rag_base_3` | Make sure the file `rag_base_3/.npmrc` exists |
+| Errors when starting the website or chatbot | You're not on Node 22. Run `nvm use 22` |
+| Backend says `MongoDB connection failed` | Check `MONGO_URI`. In MongoDB Atlas, allow your IP under **Network Access** |
+| Website says "Couldn't load tools" | The backend is not running |
+| Chatbot says `text-embedding-004 is not found` | Set `GEMINI_MODEL=gemini-embedding-001` in `rag_base_3/.env` |
+| Chatbot has no useful answers | Load data first (step 5) |
+
+---
+
+Want to know what each file does? See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
