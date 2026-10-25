@@ -3,8 +3,9 @@ dotenv.config({ path: "../.env" });
 
 import { GithubRepoLoader } from "@langchain/community/document_loaders/web/github";
 import { MarkdownTextSplitter } from "@langchain/textsplitters";
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { PineconeStore } from "@langchain/pinecone";
+import { TaskType } from "@google/generative-ai";
+import { GeminiEmbeddings } from "../notion_seeding/gemini_embeddings.js";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { config } from "./config.js";
 import crypto from "crypto";
@@ -94,9 +95,8 @@ export async function embed_upsert(processedDocs) {
   // 3. EMBED & INGEST the processed chunks into Pinecone
   try {
     console.log("\nInitializing clients and preparing for ingestion...");
-    const embeddings = new GoogleGenerativeAIEmbeddings({
-      model: "text-embedding-004",
-      apiKey: process.env.GEMINI_API_KEY,
+    const embeddings = new GeminiEmbeddings({
+      taskType: TaskType.RETRIEVAL_DOCUMENT,
     });
 
     const pinecone = new Pinecone();

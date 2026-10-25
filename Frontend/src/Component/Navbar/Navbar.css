@@ -1,52 +1,90 @@
 .navbar {
+  position: fixed; /* stays at the top while scrolling */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--nav-h);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.navbar-inner {
+  max-width: 1160px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background-color: #1e3a8a; /* dark blue */
-  color: white;
-
-  position: fixed; /* sticky */
-  top: 0;
-  left: 0;
-  width: 100%;     /* ensure full width */
-  z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-
-  box-sizing: border-box; /* important to prevent overflow */
 }
 
-.navbar-logo {
-  font-size: 20px;
-  font-weight: bold;
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand), var(--accent-2));
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .navbar-links {
   list-style: none;
   display: flex;
-  gap: 20px;
+  gap: 6px;
   margin: 0;
   padding: 0;
-
-  /* ensure links stay in one line and don’t wrap */
-  flex-wrap: nowrap;
+  flex-wrap: nowrap; /* links stay on one line */
 }
 
 .navbar-links li {
-  white-space: nowrap; /* prevents cutting text */
+  white-space: nowrap;
 }
 
 .navbar-links a {
-  color: white;
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
-  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
 }
 
 .navbar-links a:hover {
-  text-decoration: underline;
+  background: #f3f4f6;
+  color: var(--brand);
 }
 
-/* Add padding to page content so it doesn’t hide under navbar */
-body, .main-content {
-  padding-top: 60px; /* adjust if navbar height changes */
+.navbar-links a.active {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* Small phones: show only the logo mark so all links fit */
+@media (max-width: 480px) {
+  .navbar-brand-text {
+    display: none;
+  }
+
+  .navbar-links a {
+    padding: 8px 10px;
+  }
 }

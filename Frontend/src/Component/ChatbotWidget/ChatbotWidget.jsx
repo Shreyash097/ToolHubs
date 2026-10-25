@@ -1,17 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
 import ChatMessages from "./ChatMessages";
+import Icon from "../Icon/Icon";
 import "./ChatbotWidget.css";
 
 //API URL from environment variables.
 const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL;   // port value present in the env file of Frontend
 
+const GREETING = { role: "bot", text: "Hi 👋 How can I help you today?" };
+
+// Starter questions shown before the first message
+const SUGGESTIONS = [
+  "What can you help me with?",
+  "What projects has Shreyash built?",
+  "Which tech stack is used here?",
+];
+
 function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: "bot", text: "Hi 👋 How can I help you today?" },
-  ]);
+  const [messages, setMessages] = useState([GREETING]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -29,6 +37,14 @@ function ChatbotWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Esc leaves fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e) => e.key === "Escape" && setIsFullscreen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
+
   // handle sending message with streaming response
   const handleSendMessage = async (input) => {
     if (!input.trim()) return;
@@ -37,6 +53,12 @@ function ChatbotWidget() {
       console.error("VITE_CHAT_API_URL is not defined");
       return;
     }
+
+    // Last 3 question/answer pairs, so the bot can answer follow-up questions
+    const history = messages
+      .slice(1) // skip the greeting
+      .filter((m) => m.text && !m.text.startsWith("**Error:**"))
+      .slice(-6);
 
     // Add user message
     const userMessage = { role: "user", text: input };
@@ -53,7 +75,7 @@ function ChatbotWidget() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: input }),
+        body: JSON.stringify({ question: input, history }),
       });
 
       if (response.status === 401) {
@@ -129,60 +151,104 @@ function ChatbotWidget() {
 
   // clear chat
   const clearChat = () => {
-    setMessages([{ role: "bot", text: "Hi 👋 How can I help you today?" }]);
+    setMessages([GREETING]);
     try {
       sessionStorage.removeItem("chat_history");
-    } catch {}
+    } catch {
+      // storage can be unavailable (private mode); nothing to clear then
+    }
   };
+
+  const closeChat = () => {
+    setIsOpen(false);
+    setIsFullscreen(false);
+  };
+
+  const showSuggestions = messages.length === 1 && !loading;
 
   return (
     <div className="chatbot-widget">
       {isOpen && (
-        <div className={`chatbot-window ${isFullscreen ? "fullscreen" : ""}`}>
+        <div
+          className={`chatbot-window ${isFullscreen ? "fullscreen" : ""}`}
+          role="dialog"
+          aria-label="AI assistant chat"
+        >
           <div className="chatbot-header">
-            <span>ChatBot</span>
+            <div className="chatbot-title">
+              <span className="chatbot-avatar">
+                <Icon name="botMark" size={20} />
+              </span>
+              <strong>AI Assistant</strong>
+            </div>
+
             <div className="header-buttons">
-              <button onClick={() => setIsFullscreen((f) => !f)}>
-                {isFullscreen ? "🗗" : "🗖"}
+              <button
+                type="button"
+                onClick={clearChat}
+                title="Clear chat"
+                aria-label="Clear chat"
+              >
+                <Icon name="refresh" size={17} />
               </button>
-              <button onClick={() => setIsOpen(false)}>✖</button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen((f) => !f)}
+                title={isFullscreen ? "Exit full screen" : "Full screen"}
+                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+              >
+                <Icon name={isFullscreen ? "minimize" : "maximize"} size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={closeChat}
+                title="Close"
+                aria-label="Close chat"
+              >
+                <Icon name="x" size={19} />
+              </button>
             </div>
           </div>
 
           <div className="chatbot-messages">
-            <ChatMessages messages={messages} />
-            {loading && (
-              <div className="chat-msg bot-msg">⏳ Thinking...</div>
-            )}
-            <div ref={messagesEndRef} />
+            <div className="chatbot-thread">
+              <ChatMessages messages={messages} loading={loading} />
+
+              {showSuggestions && (
+                <div className="chat-suggestions">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleSendMessage(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
           <div className="chatbot-input">
             <ChatInput onSend={handleSendMessage} loading={loading} />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 6,
-              }}
-            >
-              <button onClick={clearChat} style={{ fontSize: 12 }}>
-                Clear
-              </button>
-              <small style={{ fontSize: 11, color: "#666" }}>
-                Server: {CHAT_API_URL}
-              </small>
-            </div>
+            <p className="chatbot-hint">
+              Enter to send · Shift + Enter for a new line
+            </p>
           </div>
         </div>
       )}
 
-      {!isOpen && (
+      {!isFullscreen && (
         <button
-          className="chatbot-toggle"
-          onClick={() => setIsOpen(true)}
+          type="button"
+          className={`chatbot-toggle ${isOpen ? "open" : ""}`}
+          onClick={() => (isOpen ? closeChat() : setIsOpen(true))}
+          aria-label={isOpen ? "Close chat" : "Open AI assistant"}
         >
-          💬
+          <Icon name={isOpen ? "x" : "botMark"} size={isOpen ? 26 : 30} />
+          {!isOpen && <span className="chatbot-toggle-label">Ask AI</span>}
         </button>
       )}
     </div>

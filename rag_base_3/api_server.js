@@ -26,10 +26,16 @@ async function startServer() {
 
     // --- API Endpoint for Chat (Updated for Server-Sent Events) ---
     app.post('/api/chat', async (req, res) => {
-        const { question } = req.body;
+        const { question, history } = req.body;
         if (!question) {
             return res.status(400).json({ error: 'Question is required.' });
         }
+
+        // Last few turns of the conversation, so follow-up questions make sense
+        const input = {
+            question,
+            history: Array.isArray(history) ? history.slice(-6) : [],
+        };
 
         try {
             console.log(`Streaming SSE response for question: "${question}"`);
@@ -42,7 +48,7 @@ async function startServer() {
             res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
             res.flushHeaders(); // Flush the headers to establish the connection
 
-            const result = await ragChain.invoke(question);
+            const result = await ragChain.invoke(input);
             
             // First, send the sources
             if (result.sources && result.sources.length > 0) {
@@ -50,7 +56,7 @@ async function startServer() {
             }
             
             // Then stream the answer
-            const stream = await ragChain.stream(question);
+            const stream = await ragChain.stream(input);
             
             for await (const chunk of stream) {
                 if (chunk.answer) {

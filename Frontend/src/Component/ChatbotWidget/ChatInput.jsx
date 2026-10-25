@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Icon from "../Icon/Icon";
 
 function ChatInput({ onSend, loading }) {
   const [input, setInput] = useState("");
@@ -19,14 +20,21 @@ function ChatInput({ onSend, loading }) {
   return (
     <div className="chat-input-box">
       <textarea
+        rows={1}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyPress}
         placeholder="Ask anything..."
         disabled={loading}
+        aria-label="Message"
       />
-      <button onClick={handleSend} disabled={loading || !input.trim()}>
-        ➤
+      <button
+        type="button"
+        onClick={handleSend}
+        disabled={loading || !input.trim()}
+        aria-label="Send message"
+      >
+        <Icon name="send" size={18} />
       </button>
     </div>
   );

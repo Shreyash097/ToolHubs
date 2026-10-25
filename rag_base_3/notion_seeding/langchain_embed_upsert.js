@@ -29,7 +29,7 @@ export async function embedAndUpsertWithLangChain(
 
   // instantiate Gemini embeddings wrapper
   const gemini = new GeminiEmbeddings({
-    model: process.env.GEMINI_MODEL || "text-embedding-004",
+    model: process.env.GEMINI_MODEL || "gemini-embedding-001",
     taskType: TaskType.RETRIEVAL_DOCUMENT, // safe default; you may change
     title: process.env.GEMINI_TITLE || "Documents",
     batchSize: GEMINI_BATCH,

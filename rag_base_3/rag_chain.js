@@ -6,10 +6,7 @@ import { PineconeStore } from "@langchain/pinecone";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import {
-  RunnablePassthrough,
-  RunnableSequence,
-} from "@langchain/core/runnables";
+import { RunnableSequence } from "@langchain/core/runnables";
 import { GeminiEmbeddings } from "./notion_seeding/gemini_embeddings.js";
 import { TaskType } from "@google/generative-ai";
 
@@ -22,7 +19,7 @@ export async function createRAGChain() {
   const pinecone = new Pinecone();
   const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX);
   const geminiEmbeddings = new GeminiEmbeddings({
-    model: process.env.GEMINI_MODEL || "text-embedding-004",
+    model: process.env.GEMINI_MODEL || "gemini-embedding-001",
     taskType: TaskType.RETRIEVAL_QUERY,
   });
 
@@ -55,6 +52,7 @@ list all the links that can help user to validate your answer that you will get 
 ---
 
 CONTEXT INFORMATION:
+Conversation so far (use it to understand follow-up questions): {history}
 Context: {context}
 Sources: {sources}
 Current question: {question}
@@ -62,6 +60,35 @@ Current question: {question}
 Now, generate the response following these rules exactly.`;
 
   const prompt = ChatPromptTemplate.fromTemplate(promptTemplate);
+
+  // Turns a follow-up like "how do I deploy it?" into a standalone question
+  // using the chat history, so retrieval searches for the right topic.
+  const condenseQuestion = ChatPromptTemplate.fromTemplate(
+    `Given the conversation and a follow-up question, rewrite the follow-up as a standalone question that makes sense without the conversation. If it is already standalone, return it unchanged. Reply with the question only.
+
+Conversation:
+{history}
+
+Follow-up question: {question}`
+  )
+    .pipe(llm)
+    .pipe(new StringOutputParser());
+
+  // history: [{ role: "user" | "bot", text }] sent by the frontend
+  const formatHistory = (history = []) =>
+    history
+      .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+      .join("\n") || "None";
+
+  const searchQuery = async ({ question, history }) => {
+    if (!history?.length) return question;
+    const standalone = await condenseQuestion.invoke({
+      question,
+      history: formatHistory(history),
+    });
+    console.log("Standalone question:", standalone);
+    return standalone;
+  };
   const formatDocsWithSources = (docs) => {
     // Combine the page content of all documents for the context
     const contextText = docs
@@ -192,10 +219,12 @@ Now, generate the response following these rules exactly.`;
   //   },
   // ]);
 
+  // Input: { question, history }
   return RunnableSequence.from([
     {
-      docs: retriever,
-      question: new RunnablePassthrough(),
+      docs: RunnableSequence.from([searchQuery, retriever]),
+      question: ({ question }) => question,
+      history: ({ history }) => formatHistory(history),
     },
     {
       context: ({ docs }) => {
@@ -208,6 +237,7 @@ Now, generate the response following these rules exactly.`;
       },
       sources: ({ docs }) => formatDocsWithSources(docs).sources,
       question: ({ question }) => question,
+      history: ({ history }) => history,
     },
     {
       answer: prompt.pipe(llm).pipe(new StringOutputParser()),
